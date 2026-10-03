@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TasksPanel } from "@/features/tasks/tasks-panel"
+import { PinnedLinksManager } from "@/features/topic-links/pinned-links-manager"
 import { TopicProgressPanel } from "@/features/topics/topic-progress-panel"
 import { TopicSessions } from "@/features/sessions/topic-sessions"
 import { StartSessionControl } from "@/features/timer/start-session-control"
@@ -123,6 +124,7 @@ export function TopicDetailPage() {
             <ExternalLinkIcon aria-hidden="true" />
           </a>
         </Button>
+        <PinnedLinksManager topicId={topic.id} topicTitle={topic.title_cs} />
       </section>
 
       <Tabs defaultValue="tasks" orientation="horizontal">
