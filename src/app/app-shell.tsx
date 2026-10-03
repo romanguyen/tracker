@@ -5,7 +5,6 @@ import { BookOpenTextIcon, LogOutIcon, MenuIcon } from "lucide-react"
 import { LOGIN_PATH, MAIN_NAVIGATION } from "@/app/navigation"
 import { ModeToggle } from "@/components/mode-toggle"
 import { SupabaseConfigurationNotice } from "@/components/supabase-configuration-notice"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -118,7 +117,6 @@ export function AppShell() {
 
           <div className="hidden items-center gap-2 md:flex">
             <ModeToggle />
-            <Badge variant="secondary">Milestone 7</Badge>
             {accountControls}
           </div>
 

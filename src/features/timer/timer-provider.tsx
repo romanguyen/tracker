@@ -15,7 +15,10 @@ import {
   type TimerConnection,
 } from "@/features/timer/timer-context"
 import { getSupabaseClient } from "@/lib/supabase"
+import { elapsedSecondsSince, formatElapsedSeconds } from "@/lib/time"
 import type { SessionRow } from "@/types/domain"
+
+const BASE_DOCUMENT_TITLE = "Study Ledger — PVA State Exam"
 
 export function TimerProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(() => getSupabaseClient())
@@ -147,6 +150,30 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, user])
+
+  // Live elapsed time in the browser tab while a session runs.
+  useEffect(() => {
+    if (!activeTimer) {
+      document.title = BASE_DOCUMENT_TITLE
+      return undefined
+    }
+
+    const { started_at } = activeTimer.session
+    const label = activeTimer.taskTitle ?? activeTimer.topicTitle ?? "Study"
+
+    const paintTitle = () => {
+      const elapsed = elapsedSecondsSince(started_at, Date.now(), serverOffsetMs)
+      document.title = `${formatElapsedSeconds(elapsed)} · ${label} — Study Ledger`
+    }
+
+    paintTitle()
+    const intervalId = window.setInterval(paintTitle, 1000)
+
+    return () => {
+      window.clearInterval(intervalId)
+      document.title = BASE_DOCUMENT_TITLE
+    }
+  }, [activeTimer, serverOffsetMs])
 
   // Refresh authoritative state on focus/reconnect; surface offline state.
   useEffect(() => {

@@ -9,6 +9,7 @@ import {
   Loader2Icon,
   PencilIcon,
   PlusIcon,
+  Trash2Icon,
   TriangleAlertIcon,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -43,6 +44,8 @@ import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/features/auth/auth-context"
 import {
+  deleteTaskUnlinkingSessions,
+  fetchTaskSessionCount,
   insertTask,
   renameTask,
   setTaskArchived,
@@ -53,6 +56,7 @@ import {
 import { useTopicTasks } from "@/features/tasks/use-topic-tasks"
 import { StartSessionControl } from "@/features/timer/start-session-control"
 import { useTaskTimeTotals } from "@/features/timer/use-time-totals"
+import { useTimer } from "@/features/timer/timer-context"
 import { getSupabaseClient } from "@/lib/supabase"
 import { formatRecordedSeconds } from "@/lib/time"
 import { cn } from "@/lib/utils"
@@ -70,6 +74,7 @@ type TaskActions = {
   onMove: (task: TaskRow, direction: -1 | 1) => void
   onRenameStart: (task: TaskRow) => void
   onArchive: (task: TaskRow) => void
+  onDeleteStart: (task: TaskRow) => void
 }
 
 function TaskItem({
@@ -159,6 +164,9 @@ function TaskItem({
           <DropdownMenuItem onSelect={() => actions.onArchive(task)}>
             <ArchiveIcon aria-hidden="true" /> Archive
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => actions.onDeleteStart(task)}>
+            <Trash2Icon aria-hidden="true" /> Delete
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </li>
@@ -168,6 +176,7 @@ function TaskItem({
 export function TasksPanel({ topicId }: { topicId: string }) {
   const supabase = getSupabaseClient()
   const { user } = useAuth()
+  const { activeTimer } = useTimer()
   const { tasks, isLoading, error, refresh } = useTopicTasks(topicId)
   const { totals: taskTotals } = useTaskTimeTotals(topicId)
 
@@ -179,6 +188,11 @@ export function TasksPanel({ topicId }: { topicId: string }) {
   const [renameValue, setRenameValue] = useState("")
   const [renameError, setRenameError] = useState<string | null>(null)
   const [isRenaming, setIsRenaming] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<TaskRow | null>(null)
+  const [deleteSessionCount, setDeleteSessionCount] = useState<number | null>(
+    null,
+  )
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const activeTasks = tasks.filter((task) => !task.archived_at)
   const archivedTasks = tasks.filter((task) => task.archived_at)
@@ -272,6 +286,56 @@ export function TasksPanel({ topicId }: { topicId: string }) {
     }
   }
 
+  async function handleDeleteStart(task: TaskRow) {
+    if (!supabase) {
+      return
+    }
+
+    if (activeTimer?.session.task_id === task.id) {
+      toast.error("Stop the timer on this mini-task before deleting it.")
+      return
+    }
+
+    setDeleteTarget(task)
+    setDeleteSessionCount(null)
+
+    try {
+      const count = await fetchTaskSessionCount(supabase, task.id)
+      setDeleteSessionCount(count)
+    } catch (countError) {
+      toast.error(
+        countError instanceof Error
+          ? countError.message
+          : "Could not check linked sessions.",
+      )
+      setDeleteTarget(null)
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!supabase || !deleteTarget) {
+      return
+    }
+
+    setIsDeleting(true)
+    const title = deleteTarget.title
+
+    try {
+      await deleteTaskUnlinkingSessions(supabase, deleteTarget.id)
+      toast.success(`Deleted “${title}”`)
+      setDeleteTarget(null)
+      refresh()
+    } catch (deleteError) {
+      toast.error(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Could not delete the mini-task.",
+      )
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const actions: TaskActions = {
     busyTaskId,
     onToggle: (task, completed) =>
@@ -295,6 +359,9 @@ export function TasksPanel({ topicId }: { topicId: string }) {
       setRenameTarget(task)
       setRenameValue(task.title)
       setRenameError(null)
+    },
+    onDeleteStart: (task) => {
+      void handleDeleteStart(task)
     },
     onArchive: (task) =>
       void runTaskOperation(task.id, async () => {
@@ -492,6 +559,65 @@ export function TasksPanel({ topicId }: { topicId: string }) {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete “{deleteTarget?.title}”?</DialogTitle>
+            <DialogDescription>
+              {deleteSessionCount === null ? (
+                "Checking linked sessions…"
+              ) : deleteSessionCount === 0 ? (
+                "No sessions reference this mini-task, so it will be gone permanently."
+              ) : (
+                <>
+                  {deleteSessionCount}{" "}
+                  {deleteSessionCount === 1 ? "session" : "sessions"} still{" "}
+                  {deleteSessionCount === 1 ? "references" : "reference"} this
+                  mini-task. Deleting unlinks them — the
+                  recorded time stays in topic totals, but those sessions lose
+                  the task name. Archive instead to keep the name in history.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            {(deleteSessionCount ?? 0) > 0 && deleteTarget ? (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  void runTaskOperation(deleteTarget.id, () =>
+                    setTaskArchived(supabase!, deleteTarget.id, true),
+                  )
+                  setDeleteTarget(null)
+                }}
+              >
+                <ArchiveIcon aria-hidden="true" /> Archive instead
+              </Button>
+            ) : null}
+            <Button
+              variant="destructive"
+              onClick={() => void handleConfirmDelete()}
+              disabled={isDeleting || deleteSessionCount === null}
+            >
+              {isDeleting ? (
+                <Loader2Icon className="animate-spin" aria-hidden="true" />
+              ) : null}
+              Delete permanently
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
