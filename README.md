@@ -23,6 +23,8 @@ The tracker is feature-complete across all seven milestones:
 - Mini-tasks, reliable cross-device timer, session history with corrections
 - Overview dashboard with timezone-aware daily/weekly totals, readiness, and notes
 - Catppuccin Latte/Mocha theme with a light/dark toggle
+- Mini-task deletion (with unlink guarantees) and pinned links/files per topic
+- **Pomodoro rounds**: planned focus sessions with countdowns and exact clamped completion, breaks that never count as study time, and per-device focus/break settings (migration: `20261010090000_pomodoro.sql`)
 
 ### Static-host deployment
 

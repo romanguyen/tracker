@@ -55,6 +55,7 @@ import {
 } from "@/features/tasks/tasks-api"
 import { useTopicTasks } from "@/features/tasks/use-topic-tasks"
 import { StartSessionControl } from "@/features/timer/start-session-control"
+import { PomodoroControl } from "@/features/timer/pomodoro-control"
 import { useTaskTimeTotals } from "@/features/timer/use-time-totals"
 import { useTimer } from "@/features/timer/timer-context"
 import { getSupabaseClient } from "@/lib/supabase"
@@ -130,6 +131,14 @@ function TaskItem({
         taskId={task.id}
         size="icon-sm"
         variant="outline"
+        iconOnly
+        className="mt-0.5 shrink-0"
+      />
+      <PomodoroControl
+        topicId={task.topic_id}
+        taskId={task.id}
+        size="icon-sm"
+        variant="ghost"
         iconOnly
         className="mt-0.5 shrink-0"
       />

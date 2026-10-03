@@ -4,6 +4,9 @@ import type { SessionRow } from "@/types/domain"
 export type TimerTarget = {
   topicId: string
   taskId: string | null
+  /** Defaults to a free-running stopwatch when omitted. */
+  mode?: "stopwatch" | "pomodoro"
+  plannedSeconds?: number | null
 }
 
 export type TimerOpResult =
@@ -84,6 +87,8 @@ export async function rpcStartSession(
       p_id: id,
       p_topic_id: target.topicId,
       p_task_id: target.taskId,
+      p_mode: target.mode ?? "stopwatch",
+      p_planned_seconds: target.plannedSeconds ?? null,
     }),
     RPC_TIMEOUT_MS,
   )
@@ -96,6 +101,26 @@ export async function rpcStartSession(
   return session
     ? { ok: true, session }
     : { ok: false, reason: "error", message: "Start returned no session." }
+}
+
+/** Ends a pomodoro round at exactly started_at + planned_seconds. */
+export async function rpcCompletePomodoro(
+  client: StudyLedgerClient,
+  id: string,
+): Promise<TimerOpResult> {
+  const { data, error } = await runRpc(
+    client.rpc("complete_pomodoro", { p_id: id }),
+    RPC_TIMEOUT_MS,
+  )
+
+  if (error) {
+    return rpcEnvelope(error.message)
+  }
+
+  const session = data?.[0]
+  return session
+    ? { ok: true, session }
+    : { ok: false, reason: "error", message: "Complete returned no session." }
 }
 
 export async function rpcStopSession(
@@ -127,6 +152,8 @@ export async function rpcSwitchSession(
       p_id: id,
       p_topic_id: target.topicId,
       p_task_id: target.taskId,
+      p_mode: target.mode ?? "stopwatch",
+      p_planned_seconds: target.plannedSeconds ?? null,
     }),
     RPC_TIMEOUT_MS,
   )

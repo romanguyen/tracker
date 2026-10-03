@@ -2,6 +2,7 @@ import {
   CircleDotIcon,
   Clock3Icon,
   HistoryIcon,
+  HourglassIcon,
   PencilIcon,
   Trash2Icon,
 } from "lucide-react"
@@ -101,6 +102,11 @@ export function SessionList({
                         {showTopic ? "· " : ""}
                         {session.taskTitle}
                       </span>
+                    ) : null}
+                    {session.mode === "pomodoro" ? (
+                      <Badge variant="outline">
+                        <HourglassIcon aria-hidden="true" /> Pomodoro
+                      </Badge>
                     ) : null}
                     {isRunning ? (
                       <Badge className="bg-primary text-primary-foreground">

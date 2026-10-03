@@ -46,7 +46,9 @@ export type Database = {
           created_at: string
           ended_at: string | null
           id: string
+          mode: "stopwatch" | "pomodoro"
           note: string
+          planned_seconds: number | null
           started_at: string
           task_id: string | null
           topic_id: string
@@ -57,7 +59,9 @@ export type Database = {
           created_at?: string
           ended_at?: string | null
           id?: string
+          mode?: "stopwatch" | "pomodoro"
           note?: string
+          planned_seconds?: number | null
           started_at: string
           task_id?: string | null
           topic_id: string
@@ -68,7 +72,9 @@ export type Database = {
           created_at?: string
           ended_at?: string | null
           id?: string
+          mode?: "stopwatch" | "pomodoro"
           note?: string
+          planned_seconds?: number | null
           started_at?: string
           task_id?: string | null
           topic_id?: string
@@ -289,8 +295,18 @@ export type Database = {
           all_time_seconds: number
         }>
       }
+      complete_pomodoro: {
+        Args: { p_id: string }
+        Returns: Array<Database["public"]["Tables"]["sessions"]["Row"]>
+      }
       start_session: {
-        Args: { p_id: string; p_topic_id: string; p_task_id?: string | null }
+        Args: {
+          p_id: string
+          p_topic_id: string
+          p_task_id?: string | null
+          p_mode?: "stopwatch" | "pomodoro"
+          p_planned_seconds?: number | null
+        }
         Returns: Array<Database["public"]["Tables"]["sessions"]["Row"]>
       }
       stop_session: {
@@ -298,7 +314,13 @@ export type Database = {
         Returns: Array<Database["public"]["Tables"]["sessions"]["Row"]>
       }
       switch_session: {
-        Args: { p_id: string; p_topic_id: string; p_task_id?: string | null }
+        Args: {
+          p_id: string
+          p_topic_id: string
+          p_task_id?: string | null
+          p_mode?: "stopwatch" | "pomodoro"
+          p_planned_seconds?: number | null
+        }
         Returns: Array<{
           active_session: Database["public"]["Tables"]["sessions"]["Row"]
           previous_session: Database["public"]["Tables"]["sessions"]["Row"] | null

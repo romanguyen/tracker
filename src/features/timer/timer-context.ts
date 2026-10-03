@@ -11,6 +11,15 @@ export type ActiveTimer = {
 
 export type TimerConnection = "online" | "offline"
 
+export type PomodoroPhase = "focus" | "break" | "ready"
+
+export type PomodoroRun = {
+  round: number
+  phase: PomodoroPhase
+  target: TimerTarget
+  breakEndsAtMs: number | null
+}
+
 export type TimerContextValue = {
   activeTimer: ActiveTimer | null
   isLoading: boolean
@@ -20,6 +29,18 @@ export type TimerContextValue = {
   serverOffsetMs: number
   /** Bumps on every authoritative sessions reload; aggregate widgets re-fetch on it. */
   sessionsVersion: number
+  /** Non-null while a pomodoro series is in any phase on this device. */
+  pomodoro: PomodoroRun | null
+  pomodoroSettings: { focusMinutes: number; breakMinutes: number }
+  savePomodoroSettings: (settings: {
+    focusMinutes: number
+    breakMinutes: number
+  }) => void
+  startPomodoro: (target: TimerTarget) => Promise<TimerOpResult>
+  /** Start the next focus round once a break has finished. */
+  nextPomodoroRound: () => Promise<TimerOpResult | null>
+  /** Stops a running round early (keeps partial time) or ends the series. */
+  endPomodoro: () => Promise<void>
   start: (target: TimerTarget) => Promise<TimerOpResult>
   stop: () => Promise<TimerOpResult | null>
   switchTo: (target: TimerTarget) => Promise<TimerOpResult>

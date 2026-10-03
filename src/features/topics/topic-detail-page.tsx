@@ -20,6 +20,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TasksPanel } from "@/features/tasks/tasks-panel"
 import { PinnedLinksManager } from "@/features/topic-links/pinned-links-manager"
+import { PomodoroControl } from "@/features/timer/pomodoro-control"
 import { TopicProgressPanel } from "@/features/topics/topic-progress-panel"
 import { TopicSessions } from "@/features/sessions/topic-sessions"
 import { StartSessionControl } from "@/features/timer/start-session-control"
@@ -99,6 +100,7 @@ export function TopicDetailPage() {
             : formatRecordedSeconds(totalSeconds)}
         </Badge>
         <StartSessionControl topicId={topic.id} size="lg" />
+        <PomodoroControl topicId={topic.id} size="lg" variant="secondary" />
         <Button asChild variant="outline">
           <Link to="/topics">
             <ArrowLeftIcon aria-hidden="true" /> Back to topics
